@@ -2,6 +2,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import librosa
+import subprocess
+import os
+from imageio_ffmpeg import get_ffmpeg_exe
+
 
 
 PROJECT_ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -11,6 +15,40 @@ SAMPLE_RATE = 22050
 WINDOW_LEN = 1.0
 HOP_LEN = 0.5
 SILENCE_THRESHOLD = 0.01
+
+
+def convert2wav(in_path):
+    if in_path.suffix == ".wav":                                               # already .wav
+        return in_path
+
+    out_path = in_path.with_suffix(".wav")
+    ffmpeg = get_ffmpeg_exe()
+
+    command = [
+        ffmpeg, "-y",
+        "-v", "quiet",
+        "-i", str(in_path),
+        "-ac", "1",
+        "-ar", "22050",
+        str(out_path)
+    ]
+    res = subprocess.run(command)                                              # run ffmpeg conversion util
+
+    if (res.returncode == 0 and
+            out_path.exists() and                                              # if successful -> remove old file
+                out_path.stat().st_size > 0):
+
+        print(f"{in_path.name} successfully converted to .wav")
+        try:
+            os.remove(in_path)
+            print(f"Removed {in_path.name}")
+        except OSError as err:
+            print(f"Failed to remove {in_path.name}: {err}")
+        return out_path                                                        # return path to wav for extraction step
+
+    else:
+        print(f"Failed to convert {in_path.name} to .wav format")
+        return in_path                                                         # failed -> return original file path
 
 
 def extract_features(file_path, speaker):
@@ -58,8 +96,15 @@ def extract_features(file_path, speaker):
 
 
 def main():
-    data_frames = [extract_features(file, file.stem) for file in AUDIO_DIR.glob("*.wav")]
-    final_df = pd.concat(data_frames, ignore_index=True)                       # extract features from each wav file
+    data_frames = []
+    dir_list = list(AUDIO_DIR.glob("*"))
+
+    for file in dir_list:
+        wavFile = convert2wav(file)                                            # convert each file -> .wav format
+        if wavFile.suffix == ".wav":                                           # skip any files that failed to convert
+            data_frames.append(extract_features(wavFile, wavFile.stem))        # extract features -> data frame
+
+    final_df = pd.concat(data_frames, ignore_index=True)                       # combine into 1 df
 
     feature_names = (                                                          # create feature labels
     [f"mfcc_{i}" for i in range(1, 14)] +
