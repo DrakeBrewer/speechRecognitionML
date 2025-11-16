@@ -3,12 +3,13 @@ name = "speechrecognitionml"
 version = "0.1.0"
 description = "biometric speech recognition classifier"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
-    "jupyter>=1.1.1",
-    "librosa>=0.11.0",
-    "pandas>=2.3.3",
-    "scikit-learn>=1.7.2",
-    "numpy",
-    "librosa",
+    "jupyter>=1.0",
+    "librosa>=0.11",
+    "soundfile>=0.12",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "numpy>=1.26",
+    "imageio_ffmpeg>=0.5",
 ]
