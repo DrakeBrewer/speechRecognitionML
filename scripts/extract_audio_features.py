@@ -17,6 +17,17 @@ HOP_LEN = 0.5
 SILENCE_THRESHOLD = 0.01
 
 
+def get_feature_names():
+    return (
+        [f"mfcc_{i}" for i in range(1, 14)] +
+        [f"chroma_{i}" for i in range(1, 13)] +
+        [f"contrast_{i}" for i in range(1, 8)] +
+        ["zcr", "rms"] +
+        [f"mfcc_delta_{i}" for i in range(1, 14)] +
+        ["speaker"]
+    )
+
+
 def convert2wav(in_path):
     if in_path.suffix == ".wav":                                               # already .wav
         return in_path
