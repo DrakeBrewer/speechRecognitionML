@@ -3,7 +3,8 @@ import soundfile as sf
 import numpy as np
 from joblib import load
 from pathlib import Path
-from extract_audio_features import extract_features, get_feature_names
+from src.speech_recognition.utils.extract_audio_features import get_feature_names, extract_features
+
 
 # load pickled model
 
@@ -18,6 +19,8 @@ def predict_one_instance(file_path):
     pass
 
 def main():
+
+
     while True:
         wav_file = record_1sec()
         predict_one_instance(wav_file)
