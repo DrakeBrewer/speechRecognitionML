@@ -8,13 +8,13 @@ from imageio_ffmpeg import get_ffmpeg_exe
 
 
 
-PROJECT_ROOT_DIR = Path(__file__).resolve().parents[1]
+PROJECT_ROOT_DIR = Path(__file__).resolve().parents[3]
 AUDIO_DIR = PROJECT_ROOT_DIR / "data" / "audio" / "raw"
 OUTPUT_PATH = PROJECT_ROOT_DIR / "data"/ "audio" / "processed" / "audio_features.csv"
 SAMPLE_RATE = 22050
 WINDOW_LEN = 1.0
 HOP_LEN = 0.5
-SILENCE_THRESHOLD = 0.01
+SILENCE_THRESHOLD = 0.02
 
 
 def get_feature_names():
@@ -73,6 +73,8 @@ def extract_features(file_path, speaker):
     mfcc_delta_feat = librosa.feature.delta
 
     raw_data, sampling_rate = librosa.load(file_path, sr=SAMPLE_RATE)          # raw waveform (amplitude/time)
+    raw_data = raw_data / (np.max(np.abs(raw_data)) + 1e-9)                    # normalize data
+
     window_size = int(WINDOW_LEN * sampling_rate)                              # for processing small chunks at a time
     hop_size = int(HOP_LEN * sampling_rate)                                    # overlap
     feature_vectors = []                                                       # each windows (row) extracted numerical features
@@ -116,17 +118,7 @@ def main():
             data_frames.append(extract_features(wavFile, wavFile.stem))        # extract features -> data frame
 
     final_df = pd.concat(data_frames, ignore_index=True)                       # combine into 1 df
-
-    feature_names = (                                                          # create feature labels
-    [f"mfcc_{i}" for i in range(1, 14)] +
-    [f"chroma_{i}" for i in range(1, 13)] +
-    [f"contrast_{i}" for i in range(1, 8)] +
-    ["zcr", "rms"] +
-    [f"mfcc_delta_{i}" for i in range(1, 14)] +
-    ["speaker"]
-    )
-
-    final_df.columns = feature_names
+    final_df.columns = get_feature_names()
     final_df.to_csv(OUTPUT_PATH, index=False)                                  # convert to csv
     print("Audio Data Successfully Processed")
 

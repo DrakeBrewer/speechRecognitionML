@@ -21,7 +21,7 @@ def record(duration=1.0):
 
 
 def main():
-    model = load(PROJECT_ROOT / "src" / "speech_recognition" / "model" / "speech_rec_model.pkl")
+    pipeline = load(PROJECT_ROOT / "notebooks" / "speech_rec_model.pkl")
     index_2_speaker = {
         0: "Drake",
         1: "Melissa",
@@ -32,7 +32,7 @@ def main():
 
     while True:
         # record 1 sec of audio
-        wav_file = record(2.0)
+        wav_file = record(30.0)
         df = eaf.extract_features(wav_file, "unknown")
 
         # if empty -> no audio was recorded -> continue
@@ -42,11 +42,12 @@ def main():
             # if audio recorded -> add feature names, drop target, and then use model to predict speaker
             df.columns = eaf.get_feature_names()
             xs = df.drop(columns=['speaker'])
+            print(df.to_string())
 
-            probs = model.predict_proba(xs)
+            probs = pipeline.predict_proba(xs)
             avg = probs.mean(axis=0)
             best_idx = avg.argmax()
-            predicted = index_2_speaker[model.classes_[best_idx]]
+            predicted = index_2_speaker[pipeline.classes_[best_idx]]
             certainty = avg[best_idx]
             print(f"Speaker: {predicted} | Certainty: {certainty:.2f}")
 
