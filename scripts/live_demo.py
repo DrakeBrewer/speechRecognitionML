@@ -32,7 +32,7 @@ def main():
 
     while True:
         # record 1 sec of audio
-        wav_file = record(30.0)
+        wav_file = record(2.0)
         df = eaf.extract_features(wav_file, "unknown")
 
         # if empty -> no audio was recorded -> continue
@@ -50,7 +50,7 @@ def main():
             predicted = index_2_speaker[pipeline.classes_[best_idx]]
             certainty = avg[best_idx]
             print(f"Speaker: {predicted} | Certainty: {certainty:.2f}")
-
+            break
 
 if __name__ == '__main__':
     main()

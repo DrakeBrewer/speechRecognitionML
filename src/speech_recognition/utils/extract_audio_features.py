@@ -73,7 +73,6 @@ def extract_features(file_path, speaker):
     mfcc_delta_feat = librosa.feature.delta
 
     raw_data, sampling_rate = librosa.load(file_path, sr=SAMPLE_RATE)          # raw waveform (amplitude/time)
-    raw_data = raw_data / (np.max(np.abs(raw_data)) + 1e-9)                    # normalize data
 
     window_size = int(WINDOW_LEN * sampling_rate)                              # for processing small chunks at a time
     hop_size = int(HOP_LEN * sampling_rate)                                    # overlap
