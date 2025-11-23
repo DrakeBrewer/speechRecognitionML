@@ -11,16 +11,16 @@ sys.path.append(str(PROJECT_ROOT / "src"))
 from speech_recognition.utils import extract_audio_features as eaf
 
 
-def record(duration=1.0):
+def record(duration=1.0, file_name="live_demo"):
     sr = eaf.SAMPLE_RATE
-    out_file = DEMO_DIR / "demo.wav"
+    out_file = DEMO_DIR / f"{file_name}.wav"
     recording = sd.rec(int(sr * duration), samplerate=sr, channels=1)
     sd.wait()                          # wait for recording to finish
     sf.write(out_file, recording, sr)  # overwritten each loop
     return out_file
 
 
-def main():
+def live_demo():
     pipeline = load(PROJECT_ROOT / "notebooks" / "speech_rec_model.pkl")
     index_2_speaker = {
         0: "Drake",
@@ -32,7 +32,7 @@ def main():
 
     while True:
         # record 1 sec of audio
-        wav_file = record(2.0)
+        wav_file = record(2.0, "demo")
         df = eaf.extract_features(wav_file, "unknown")
 
         # if empty -> no audio was recorded -> continue
@@ -51,6 +51,25 @@ def main():
             certainty = avg[best_idx]
             print(f"Speaker: {predicted} | Certainty: {certainty:.2f}")
             break
+
+def main():
+    pipeline = load(PROJECT_ROOT / "notebooks" / "speech_rec_model.pkl")
+    index_2_speaker = {
+        0: "Drake",
+        1: "Melissa",
+        2: "Lisa",
+        3: "Dan",
+        4: "David"
+    }
+
+    audioFile = eaf.convert2wav(DEMO_DIR / "David_0.wav")
+    df = eaf.extract_features(audioFile, "David")
+    df.columns = eaf.get_feature_names()
+    xs = df.drop(columns=['speaker'])
+    num_preds = pipeline.predict(xs)
+    name_preds = [index_2_speaker[n] for n in num_preds]
+    df['Predicted'] = name_preds
+    print(df.to_string())
 
 if __name__ == '__main__':
     main()
