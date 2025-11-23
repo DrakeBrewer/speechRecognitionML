@@ -62,7 +62,46 @@ def convert2wav(in_path):
         return in_path                                                         # failed -> return original file path
 
 
-def extract_features(file_path, speaker):
+def extract_features_raw(data) ->pd.DataFrame:
+    sampling_rate = SAMPLE_RATE
+
+    window_size = int(WINDOW_LEN * sampling_rate)                              # for processing small chunks at a time
+    hop_size = int(HOP_LEN * sampling_rate)                                    # overlap
+    feature_vectors = []                                                       # each windows (row) extracted numerical features
+
+    frames = librosa.util.frame(data, frame_length=window_size, hop_length=hop_size)
+    for i in range(frames.shape[1]):
+        window = frames[:,i]
+
+        rms = librosa.feature.rms(y=window)
+        if np.mean(rms) < SILENCE_THRESHOLD:                                   # skip over silent segments
+            continue
+
+        mfcc = librosa.feature.mfcc(y=window, sr=sampling_rate, n_mfcc=13)
+        chroma = librosa.feature.chroma_stft(y=window, sr=sampling_rate)
+        contrast = librosa.feature.spectral_contrast(y=window, sr=sampling_rate)
+        zcr = librosa.feature.zero_crossing_rate(y=window)
+        mfcc_delta = librosa.feature.delta(mfcc)
+
+        feature_list = [mfcc, chroma, contrast, zcr, rms, mfcc_delta]
+        features = []
+        for idx, feat in enumerate(feature_list):
+            if idx == 3 or idx == 4:                                           # zcr & rms are single quantifiers (ok to append)
+                features.append(np.mean(feat))
+            else:
+                features.extend(np.mean(feat, axis=1))                         # the rest are 2D -> must extend all values
+
+        feature_vectors.append(features)
+
+    # Convert to DataFrame
+    df = pd.DataFrame(feature_vectors)
+    feature_names = get_feature_names()
+    if len(feature_names) == df.shape[1]:
+        df.columns = feature_names
+
+    return df
+
+def extract_features(file_path, speaker: str) -> pd.DataFrame:
     print(f"Extracting features from {speaker}'s .wav file")
 
     mfcc_feat = librosa.feature.mfcc

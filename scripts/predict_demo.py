@@ -1,68 +1,86 @@
 import asyncio
-import queue
+from pathlib import Path
 import sys
+from typing import Any, AsyncGenerator, List, Tuple
+from joblib import load
 import sounddevice as sd
 import numpy as np
+from numpy.typing import NDArray
+from speech_recognition.utils import extract_audio_features as eaf
 
-async def stream_generator(blocksize, *, channels=1, dtype='float32',
-                           pre_fill_blocks=10, **kwargs):
-    """Generator that yields blocks of input/output data as NumPy arrays.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+model = load(PROJECT_ROOT / "notebooks" / "speech_rec_model.pkl")
+index_2_speaker = {
+    0: "Drake",
+    1: "Melissa",
+    2: "Lisa",
+    3: "Dan",
+    4: "David"
+}
 
-    The output blocks are uninitialized and have to be filled with
-    appropriate audio signals.
+async def inputstream_generator(
+            blocksize=1024,
+            channels=1,
+            samplerate=22050
+    ) -> AsyncGenerator[Tuple[NDArray[np.float64], Any]]:
 
-    """
-    assert blocksize != 0
-    q_in = asyncio.Queue()
-    q_out = queue.Queue()
+    q_in: asyncio.Queue[Tuple[NDArray[np.float64], Any]] = asyncio.Queue()
     loop = asyncio.get_event_loop()
 
-    def callback(indata, outdata, frame_count, time_info, status):
-        loop.call_soon_threadsafe(q_in.put_nowait, (indata.copy(), status))
-        outdata[:] = q_out.get_nowait()
-
-    # pre-fill output queue
-    for _ in range(pre_fill_blocks):
-        q_out.put(np.zeros((blocksize, channels), dtype=dtype))
-
-    stream = sd.Stream(blocksize=blocksize, callback=callback, dtype=dtype,
-                       channels=channels, **kwargs)
-    with stream:
-        while True:
-            indata, status = await q_in.get()
-            outdata = np.empty((blocksize, channels), dtype=dtype)
-            yield indata, outdata, status
-            q_out.put_nowait(outdata) # This makes the data output to the speaker
-
-
-
-async def inputstream_generator(channels=1, **kwargs):
-    """Generator that yields blocks of input data as NumPy arrays."""
-    q_in = asyncio.Queue()
-    loop = asyncio.get_event_loop()
-
-    def callback(indata, frame_count, time_info, status):
+    def callback(
+            indata: NDArray[np.float64],
+            frame_count: int,
+            time_info: Any,
+            status: int
+    ):
         loop.call_soon_threadsafe(q_in.put_nowait, (indata.copy(), status))
 
-    stream = sd.InputStream(callback=callback, channels=channels, **kwargs)
+    stream = sd.InputStream(callback=callback, blocksize=blocksize, channels=channels, samplerate=samplerate)
     with stream:
         while True:
             indata, status = await q_in.get()
             yield indata, status
 
-async def wire_coro(**kwargs):
-    """Create a connection between audio inputs and outputs.
-    Asynchronously iterates over a stream generator and for each block
-    simply copies the input data into the output block.
-    """
-    async for indata, outdata, status in stream_generator(**kwargs):
+
+async def process_audio(blocksize: int, channels: int, samplerate: int) -> None:
+    buf: List[NDArray[np.float64]] = []
+    duration = 1.0
+    required_samples = int(samplerate * duration)
+
+    async for indata, status in inputstream_generator(blocksize, channels, samplerate):
         if status:
             print(status)
-        outdata[:] = indata
+        if indata.ndim > 1:
+            audio_1d = indata[:, 0]  # Take first channel
+        else:
+            audio_1d = indata
+
+        audio_1d = audio_1d.flatten()
+
+        buf.append(audio_1d)
+        num_samples = sum(chunk.shape[0] for chunk in buf)
+
+        if num_samples >= required_samples:
+            data = np.concatenate(buf, axis=0)
+            data = data[:required_samples]
+
+            df = eaf.extract_features_raw(data)
+
+            if len(df) > 0:
+                probs = model.predict_proba(df)
+                avg = probs.mean(axis=0)
+                best_idx = avg.argmax()
+                predicted = index_2_speaker[model.classes_[best_idx]]
+                certainty = avg[best_idx]
+                print(f"Speaker: {predicted} | Certainty: {certainty:.2f}")
+            else:
+                print("couldn't make a prediction")
+
+            buf = []
 
 
-async def main(**kwargs):
-    audio_task = asyncio.create_task(wire_coro(**kwargs))
+async def main():
+    audio_task = asyncio.create_task(process_audio(blocksize=22050, channels=1, samplerate=22050))
     try:
         await audio_task
     except asyncio.CancelledError:
@@ -70,6 +88,6 @@ async def main(**kwargs):
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main(blocksize=1024))
+        asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit('\nInterrupted by user')
