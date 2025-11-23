@@ -11,12 +11,21 @@ sys.path.append(str(PROJECT_ROOT / "src"))
 from speech_recognition.utils import extract_audio_features as eaf
 
 
-def record(duration=1.0, file_name="live_demo"):
+def record(duration=2.0, file_name="live_demo"):
     sr = eaf.SAMPLE_RATE
     out_file = DEMO_DIR / f"{file_name}.wav"
-    recording = sd.rec(int(sr * duration), samplerate=sr, channels=1)
-    sd.wait()                          # wait for recording to finish
-    sf.write(out_file, recording, sr)  # overwritten each loop
+
+    # Warm-up read
+    sd.rec(int(0.05 * sr), samplerate=sr, channels=1, dtype="float32")
+    sd.wait()
+
+    # Real recording
+    print(f"Recording {file_name.name} for {duration} seconds ...")
+    recording = sd.rec(int(sr * duration), samplerate=sr, channels=1, dtype="float32")
+    sd.wait()
+
+    sf.write(out_file, recording, sr, subtype='PCM_16')
+    print(f"Saved recording to {out_file}")
     return out_file
 
 
@@ -69,7 +78,15 @@ def main():
     num_preds = pipeline.predict(xs)
     name_preds = [index_2_speaker[n] for n in num_preds]
     df['Predicted'] = name_preds
+
+    correct = 0
+    for name in name_preds:
+        if name == "David":
+            correct += 1
     print(df.to_string())
+    print(f"Accuracy: {correct / len(name_preds)}")
+
+
 
 if __name__ == '__main__':
     main()
