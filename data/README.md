@@ -1,16 +1,55 @@
 Recording instructions:
 
-The morning air was cool and quiet after a night of steady rain. Puddles shimmered on the street, reflecting the soft light of a cloudy sky. A faint breeze carried the smell of wet grass and clean earth. It felt like the world was slowly waking up.
+Live Demo Audio Collection Instructions
 
-Deep in the forest, sunlight filtered through the tall trees and painted moving patterns on the ground. The sound of birds and rustling leaves filled the air. Each step on the soft soil felt calm and familiar, like the earth itself was breathing.
+Goal: Collect ~10 minutes of varied speech per speaker for training a robust speaker recognition model.
 
-The kettle began to whistle just as the clock struck eight. Coffee filled the room with a warm, rich smell. Outside, cars passed by and a dog barked in the distance. It was an ordinary morning, but somehow it felt peaceful.
 
-Streetlights flickered on as the last bit of sunlight faded from the sky. People hurried along the sidewalks, their footsteps echoing against the buildings. The city was alive with movement and sound, glowing with energy even after dark.
+1. Setup
 
-- Each person should record all four paragraphs in one take (with short pauses between each). That’ll give us about 1 minute long audio file per person. 
-- Record in a quiet room with minimal background noise.
-- Use your phone or laptop mic — `.wav` or `.m4a` format is fine.
-- Keep volume consistent; speak naturally.
-- If you can find at least 1 other person, besides yourself, to record that would be helpful. The more recordings we get the better 😎.
-- Label the file `name.wav/m4a`
+Use the same laptop mic (or the mic you’ll use for the live demo).
+
+Use the provided record() Python function to ensure consistent sample rate (22050 Hz) and WAV format.
+
+Record in a quiet environment to minimize background noise. The script can be ran from terminal in the project root dir using the following cmd: 
+
+python3 -m src.speech_recognition.utils.record_audio --speaker <yourname> --session <sessionID> --duration <duration>. 
+
+For example -> python3 -m src.speech_recognition.utils.record_audio --speaker David --session 01 --duration 180. 
+
+
+2. Recording Sessions
+
+Each speaker should record roughly 10 minutes total, split into 2–4 separate sessions of variable lengths.
+
+Example 1: 2 × 2-minute + 2 × 3-minute sessions
+
+Example 2: 3 × 3-minute + 1 × 1-minute session
+
+File naming convention: Python record_audio script will save file as "speaker_sessionID.wav"
+
+
+3. Content Suggestions
+
+Vary the content so the model doesn’t just memorize words:
+
+Read aloud paragraphs from books (different from other team members).
+
+Random sentences (news articles, Wikipedia, jokes, short stories).
+
+Poems, lyrics, or quotes.
+
+Spontaneous speech (talk about your day, hobbies, or tell a short story).
+
+Try to mix long and short sentences to give a variety of prosody and pitch.
+
+
+4. Recording Tips
+
+Keep speaking volume consistent. Avoid whispering or yelling.
+
+Avoid excessive background noise.
+
+If a session has long silence periods, it’s fine; the feature extractor will skip silent frames automatically.
+
+Don’t worry about exact durations — just aim for roughly the total target time per speaker.
