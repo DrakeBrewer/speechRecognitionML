@@ -1,4 +1,5 @@
 import asyncio
+from os import wait
 import numpy as np
 import pandas as pd
 import sounddevice as sd
@@ -21,63 +22,52 @@ class Audio_Processor:
         self.channels = channels
         self.samplerate = samplerate
         self.sample_duration_s = sample_duration_s
-
         self.process = process
+        self.buf: List[NDArray[np.float64]] = []
 
-    async def _inputstream_generator(self):
-        q_in: asyncio.Queue[Tuple[NDArray[np.float64], Any]] = asyncio.Queue()
-        loop = asyncio.get_event_loop()
 
-        def callback(
-                indata: NDArray[np.float64],
-                frame_count: int,
-                time_info: Any,
-                status: int
-        ):
-            loop.call_soon_threadsafe(q_in.put_nowait, (indata.copy(), status))
+    def _process_audio(
+        self,
+        indata: NDArray[np.float64],
+        frames: int,
+        time_info,
+        status
+    ) -> None:
+        required_samples = int(self.samplerate * self.sample_duration_s)
 
+        if status:
+            print(status)
+        if indata.ndim > 1:
+            audio_1d = indata[:, 0]  # Take first channel
+        else:
+            audio_1d = indata
+
+        audio_1d = audio_1d.flatten()
+
+        self.buf.append(audio_1d)
+        num_samples = sum(chunk.shape[0] for chunk in self.buf)
+
+        if num_samples >= required_samples:
+            data = np.concatenate(self.buf, axis=0)
+            data = data[:required_samples]
+
+            df = eaf.extract_features_raw(data)
+
+            if len(df) > 0:
+                self.process(df)
+            else:
+                print("couldn't make a prediction")
+
+            self.buf = []
+
+
+    def run(self) -> None:
         stream = sd.InputStream(
-            callback=callback,
+            callback=self._process_audio,
             blocksize=self.blocksize,
             channels=self.channels,
             samplerate=self.samplerate
         )
-        with stream:
-            while True:
-                indata, status = await q_in.get()
-                yield indata, status
 
-    async def _process_audio(self) -> None:
-        buf: List[NDArray[np.float64]] = []
-        duration = 1.0
-        required_samples = int(self.samplerate * duration)
-
-        async for indata, status in self._inputstream_generator():
-            if status:
-                print(status)
-            if indata.ndim > 1:
-                audio_1d = indata[:, 0]  # Take first channel
-            else:
-                audio_1d = indata
-
-            audio_1d = audio_1d.flatten()
-
-            buf.append(audio_1d)
-            num_samples = sum(chunk.shape[0] for chunk in buf)
-
-            if num_samples >= required_samples:
-                data = np.concatenate(buf, axis=0)
-                data = data[:required_samples]
-
-                df = eaf.extract_features_raw(data)
-
-                if len(df) > 0:
-                    self.process(df)
-                else:
-                    print("couldn't make a prediction")
-
-                buf = []
-
-    async def run(self):
-        await asyncio.create_task(self._process_audio())
+        stream.start()
 
