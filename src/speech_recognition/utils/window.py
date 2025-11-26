@@ -18,6 +18,7 @@ class Window:
 
         self.__draw_canvas(bg_color)
 
+
     def __draw_canvas(self, bg_color: str):
         self.canvas = tk.Canvas(self.root, bg=bg_color, highlightthickness=0)
         self.canvas.pack(expand=True, fill=tk.BOTH)
@@ -38,15 +39,17 @@ class Window:
             font=("Roboto", 28)
         )
 
-    def layout(self):
+
+    def _layout(self):
         xCenter = self.root.winfo_width() // 2
         yCenter = self.root.winfo_height() // 2
 
         self.canvas.coords(self.text_name, xCenter, yCenter)
         self.canvas.coords(self.text_conf, xCenter, yCenter + 50)
 
+
     def update(self) -> None:
-        self.layout()
+        self._layout()
 
         label, confidence = self.update_func()
 
@@ -54,10 +57,10 @@ class Window:
         self.canvas.itemconfigure(self.text_conf, text=f"{confidence:.2f}", fill=color_conf(confidence))
         self.root.after(100, self.update)
 
+
     def run(self):
         self.update()
         self.root.mainloop()
-
 
 
 def color_conf(value: float) -> str:
