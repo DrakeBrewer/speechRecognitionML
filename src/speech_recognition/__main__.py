@@ -7,7 +7,7 @@ from speech_recognition.utils.window import Window
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-last_prediction: Tuple[str, float] = ("unknown", 0.0)
+last_prediction: Tuple[str, float] = ("Unrecognized", 0.0)
 
 def main():
     global last_prediction
@@ -27,6 +27,9 @@ def main():
         best_idx = avg.argmax()
         predicted = index_2_speaker[model.classes_[best_idx]]
         certainty = avg[best_idx]
+
+        if certainty < 0.65:
+            predicted = "Unrecognized"
 
         last_prediction = (predicted, certainty)
 
