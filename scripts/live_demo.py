@@ -62,7 +62,7 @@ def live_demo():
             break
 
 def main():
-    pipeline = load(PROJECT_ROOT / "notebooks" / "speech_rec_model.pkl")
+    # pipeline = load(PROJECT_ROOT / "notebooks" / "speech_rec_model.pkl")
     index_2_speaker = {
         0: "Drake",
         1: "Melissa",
@@ -71,20 +71,20 @@ def main():
         4: "David"
     }
 
-    audioFile = eaf.convert2wav(DEMO_DIR / "David_0.wav")
-    df = eaf.extract_features(audioFile, "David")
-    df.columns = eaf.get_feature_names()
-    xs = df.drop(columns=['speaker'])
-    num_preds = pipeline.predict(xs)
-    name_preds = [index_2_speaker[n] for n in num_preds]
-    df['Predicted'] = name_preds
+    # audioFile = eaf.convert2wav(DEMO_DIR / "David_0.wav")
+    # df = eaf.extract_features(PROJECT_ROOT / "data" / "audio" / "raw" / "m4a_recordings" / "Drake.wav", "Drake")
+    # df.columns = eaf.get_feature_names()
+    # xs = df.drop(columns=['speaker'])
+    # num_preds = pipeline.predict(xs)
+    # name_preds = [index_2_speaker[n] for n in num_preds]
+    # df['Predicted'] = name_preds
 
-    correct = 0
-    for name in name_preds:
-        if name == "David":
-            correct += 1
-    print(df.to_string())
-    print(f"Accuracy: {correct / len(name_preds)}")
+    # correct = 0
+    # for name in name_preds:
+    #     if name == "David":
+    #         correct += 1
+    # print(df.to_string())
+    # print(f"Accuracy: {correct / len(name_preds)}")
 
 
 

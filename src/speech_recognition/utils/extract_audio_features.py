@@ -24,7 +24,7 @@ def get_feature_names():
         [f"contrast_{i}" for i in range(1, 8)] +
         ["zcr", "rms"] +
         [f"mfcc_delta_{i}" for i in range(1, 14)] +
-        ["speaker"]
+        ["speaker"] + ["session"]
     )
 
 
@@ -101,7 +101,7 @@ def extract_features_raw(data) ->pd.DataFrame:
 
     return df
 
-def extract_features(file_path, speaker: str) -> pd.DataFrame:
+def extract_features(file_path, speaker: str, session_id: str) -> pd.DataFrame:
     print(f"Extracting features from {speaker}'s .wav file")
 
     mfcc_feat = librosa.feature.mfcc
@@ -141,6 +141,7 @@ def extract_features(file_path, speaker: str) -> pd.DataFrame:
                 features.extend(np.mean(feat, axis=1))                         # the rest are 2D -> must extend all values
 
         features.append(speaker)                                               # add speaker name to end
+        features.append(session_id)
         feature_vectors.append(features)
 
     df = pd.DataFrame(feature_vectors)
@@ -154,8 +155,8 @@ def main():
     for file in dir_list:
         wavFile = convert2wav(file)                                            # convert each file -> .wav format
         if wavFile.suffix == ".wav":
-            speaker = wavFile.stem.split("_")[0]                               # skip any files that failed to convert
-            data_frames.append(extract_features(wavFile, speaker))             # extract features -> data frame
+            speaker, session_id = wavFile.stem.split("_")                                  # skip any files that failed to convert
+            data_frames.append(extract_features(wavFile, speaker, session_id))             # extract features -> data frame
 
     final_df = pd.concat(data_frames, ignore_index=True)                       # combine into 1 df
     final_df.columns = get_feature_names()
