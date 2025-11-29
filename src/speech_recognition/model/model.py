@@ -23,7 +23,6 @@ def train():
     
     # slplit data into tain/testing + encode speaker names
     x = df.drop(columns=["speaker", "session"], axis=1)
-    y = df["speaker"]
     y_encoded = df["speaker"].map({"Drake":0, "Melissa":1, "Lisa":2, "Dan":3, "David":4})
     groups = df["session"]
 
@@ -32,29 +31,52 @@ def train():
     # y_encoded2 = label_encoder.fit_transform(y)
     # print("Classes:", label_encoder.classes_)
 
+    gkfolds = GroupKFold(n_splits=5)
+
     gb_pipe = Pipeline([
     ('scaler', StandardScaler()),
-    ('selector', SelectKBest(mutual_info_classif, k=30)),
+    ('selector', SelectKBest(mutual_info_classif, k="all")),
     ('classifier', GradientBoostingClassifier(random_state=RANDOM_STATE))
     ])
-    
+
     gb_grid = {
-        "selector__k": [20,30],
-        "classifier__n_estimators": [100, 200],
+        "selector__k": [20,30,"all"],
+        "classifier__n_estimators": [100, 200, 300],
         "classifier__learning_rate": [0.01, 0.05, 0.1],
-        "classifier__max_depth": [2, 3]
+        "classifier__max_depth": [2, 3, 5]
     }
 
-    print("Gradient Boosting + Cross Validation:")
-    gkfolds = GroupKFold(n_splits=5)
     gb_search = GridSearchCV(gb_pipe, gb_grid, scoring="f1_macro", cv=gkfolds, n_jobs=-1)
     gb_search.fit(x, y_encoded, groups=groups)
+    print("Gradient Boosting:")
     print(f"Best F1 Score: {gb_search.best_score_}")
     print(f"Best Params: {gb_search.best_params_}")
 
+    # SVC Classifier
+    svc_pipe = Pipeline([
+        ('scaler', StandardScaler()),
+        ('selector', SelectKBest(mutual_info_classif, k="all")),
+        ('classifier', SVC(probability=True))
+    ])
+
+    svc_grid = {
+        "selector__k": [30, 40, "all"],
+        "classifier__C": [10, 25, 50],
+        "classifier__gamma": ["scale", "auto", 0.1, 0.01],
+        "classifier__kernel": ["rbf", "poly"],
+        "classifier__degree": [2, 3]
+    }
+
+    svc_search = GridSearchCV(svc_pipe, svc_grid, scoring="f1_macro", cv=gkfolds, n_jobs=-1)
+    svc_search.fit(x, y_encoded, groups=groups)
+    print("SVC:")
+    print(f"Best F1: {svc_search.best_score_}")
+    print(f"Best Params: {svc_search.best_params_}")
+
     # best model
-    gb_model = gb_search.best_estimator_
+    model = svc_search.best_estimator_
     colum_names = x.columns.to_list()
+    print("Model Successfully Trained")
     return gb_model
 
 def predict():
@@ -69,7 +91,3 @@ def save(model):
     #     "col_names": colum_names, 
     #     "label_encoder": Label_encoder
     # }
-
-
-if __name__ == '__main__':
-    save(train())
