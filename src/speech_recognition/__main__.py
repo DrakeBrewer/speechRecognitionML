@@ -24,7 +24,14 @@ def main():
 
     def process_features(df: pd.DataFrame) -> None:
         global last_prediction
-        df.columns = get_feature_names()[:-2] # assign feature names
+        df.columns = get_feature_names()[:-2] # assign col names
+
+        # --- SILENCE DETECTION ---
+        rms_energy = df.filter(like="rms").mean().iloc[0]
+        if rms_energy < 0.03:
+            last_prediction = ("Unrecognized", 0.0)
+            return
+
         probs = model.predict_proba(df)
         avg = probs.mean(axis=0)
         best_idx = avg.argmax()
