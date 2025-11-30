@@ -14,7 +14,7 @@ OUTPUT_PATH = PROJECT_ROOT_DIR / "data"/ "audio" / "processed" / "audio_features
 SAMPLE_RATE = 22050
 WINDOW_LEN = 1.0
 HOP_LEN = 0.5
-SILENCE_THRESHOLD = 0.03
+SILENCE_THRESHOLD = 0.001
 
 
 def get_feature_names():
