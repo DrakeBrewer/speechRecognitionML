@@ -4,6 +4,8 @@ from joblib import load
 from pathlib import Path
 from speech_recognition.utils.audio_stream import Audio_Processor
 from speech_recognition.utils.window import Window
+from speech_recognition.utils.extract_audio_features import get_feature_names
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,6 +24,7 @@ def main():
 
     def process_features(df: pd.DataFrame) -> None:
         global last_prediction
+        df.columns = get_feature_names()[:-2] # assign feature names
         probs = model.predict_proba(df)
         avg = probs.mean(axis=0)
         best_idx = avg.argmax()
