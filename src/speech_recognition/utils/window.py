@@ -14,8 +14,12 @@ class Window:
         self.root.title(title)
         self.root.configure(background=bg_color)
         self.root.geometry(dimensions)
-        self.update_func = update_func
+        
+        # keep window in top of all others
+        self.root.attributes("-topmost", True)
+        self.root.lift()
 
+        self.update_func = update_func
         self.__draw_canvas(bg_color)
 
 
