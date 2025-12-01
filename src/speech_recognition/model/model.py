@@ -23,7 +23,7 @@ def train():
     
     # slplit data into tain/testing + encode speaker names
     x = df.drop(columns=["speaker", "session"], axis=1)
-    y_encoded = df["speaker"].map({"Drake":0, "Melissa":1, "Lisa":2, "Dan":3, "David":4})
+    y_encoded = df["speaker"].map({"Drake":0, "Melissa":1, "Lisa":2, "Dan":3, "David":4, "Nicole":5})
     groups = df["session"]
 
     # auto target encoding?

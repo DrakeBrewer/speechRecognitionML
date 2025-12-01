@@ -19,7 +19,8 @@ def main():
         1: "Melissa",
         2: "Lisa",
         3: "Dan",
-        4: "David"
+        4: "David",
+        5: "Nicole",
     }
 
     def process_features(df: pd.DataFrame) -> None:
